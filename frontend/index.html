@@ -1,0 +1,519 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>더여백26 CS 챗봇</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --primary: #c9797b;
+    --primary-light: #f5e6e6;
+    --primary-dark: #a85f61;
+    --bg: #fdf8f8;
+    --surface: #ffffff;
+    --border: #e8d5d5;
+    --text: #2d1f1f;
+    --text-muted: #8a6e6e;
+    --radius: 10px;
+    --shadow: 0 2px 12px rgba(180,100,100,0.08);
+  }
+
+  body {
+    font-family: 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+  }
+
+  /* ── Header ── */
+  header {
+    background: var(--primary);
+    color: #fff;
+    padding: 16px 32px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    box-shadow: 0 2px 8px rgba(150,60,60,0.2);
+  }
+  header h1 { font-size: 1.2rem; font-weight: 700; letter-spacing: -0.3px; }
+  header span { font-size: 0.85rem; opacity: 0.85; }
+
+  /* ── Layout ── */
+  .container { max-width: 960px; margin: 0 auto; padding: 28px 20px; }
+
+  /* ── Tabs ── */
+  .tabs {
+    display: flex;
+    gap: 4px;
+    border-bottom: 2px solid var(--border);
+    margin-bottom: 28px;
+  }
+  .tab-btn {
+    padding: 10px 24px;
+    border: none;
+    background: none;
+    cursor: pointer;
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--text-muted);
+    border-bottom: 3px solid transparent;
+    margin-bottom: -2px;
+    transition: all 0.15s;
+    border-radius: 6px 6px 0 0;
+  }
+  .tab-btn:hover { color: var(--primary); background: var(--primary-light); }
+  .tab-btn.active { color: var(--primary); border-bottom-color: var(--primary); }
+
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; }
+
+  /* ── Card ── */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 24px;
+    box-shadow: var(--shadow);
+  }
+
+  /* ── Form ── */
+  .form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-bottom: 16px;
+  }
+  .form-group { display: flex; flex-direction: column; gap: 6px; }
+  .form-group label { font-size: 0.82rem; font-weight: 600; color: var(--text-muted); letter-spacing: 0.3px; }
+  .form-group input,
+  .form-group textarea {
+    padding: 10px 14px;
+    border: 1.5px solid var(--border);
+    border-radius: 8px;
+    font-size: 0.95rem;
+    font-family: inherit;
+    color: var(--text);
+    background: #fff;
+    transition: border-color 0.15s;
+    outline: none;
+  }
+  .form-group input:focus,
+  .form-group textarea:focus { border-color: var(--primary); }
+  .form-group textarea { resize: vertical; min-height: 90px; }
+
+  /* ── Buttons ── */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 10px 22px;
+    border: none;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .btn-primary { background: var(--primary); color: #fff; }
+  .btn-primary:hover { background: var(--primary-dark); }
+  .btn-primary:disabled { background: #ccc; cursor: not-allowed; }
+  .btn-outline {
+    background: #fff;
+    color: var(--primary);
+    border: 1.5px solid var(--primary);
+  }
+  .btn-outline:hover { background: var(--primary-light); }
+  .btn-sm { padding: 6px 14px; font-size: 0.82rem; }
+
+  /* ── Answer box ── */
+  #answer-section { margin-top: 24px; display: none; }
+  #answer-section .section-label {
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: var(--text-muted);
+    margin-bottom: 8px;
+    letter-spacing: 0.3px;
+  }
+  #answer-box {
+    background: var(--primary-light);
+    border: 1.5px solid var(--border);
+    border-radius: 8px;
+    padding: 16px;
+    font-size: 0.95rem;
+    line-height: 1.7;
+    white-space: pre-wrap;
+    min-height: 80px;
+  }
+  .answer-actions { margin-top: 10px; display: flex; gap: 8px; }
+
+  /* ── Loading spinner ── */
+  .spinner {
+    width: 18px; height: 18px;
+    border: 2px solid #fff;
+    border-top-color: transparent;
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+    display: none;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ── History ── */
+  .filter-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-bottom: 16px;
+    align-items: flex-end;
+  }
+  .filter-row input {
+    padding: 8px 12px;
+    border: 1.5px solid var(--border);
+    border-radius: 8px;
+    font-size: 0.88rem;
+    font-family: inherit;
+    outline: none;
+    color: var(--text);
+    flex: 1;
+    min-width: 120px;
+    max-width: 180px;
+  }
+  .filter-row input:focus { border-color: var(--primary); }
+  .filter-row input[type="date"] { max-width: 160px; }
+
+  .table-wrap { overflow-x: auto; margin-top: 4px; }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.88rem;
+  }
+  thead th {
+    background: var(--primary-light);
+    color: var(--primary-dark);
+    font-weight: 700;
+    padding: 10px 12px;
+    text-align: left;
+    border-bottom: 2px solid var(--border);
+    white-space: nowrap;
+  }
+  tbody tr { border-bottom: 1px solid var(--border); transition: background 0.1s; }
+  tbody tr:hover { background: #fdf0f0; }
+  tbody td {
+    padding: 10px 12px;
+    vertical-align: top;
+    color: var(--text);
+  }
+  tbody td.text-col {
+    max-width: 260px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    cursor: pointer;
+  }
+  tbody td.text-col.expanded { white-space: pre-wrap; max-width: 260px; }
+  .empty-row td {
+    text-align: center;
+    color: var(--text-muted);
+    padding: 40px;
+    font-size: 0.9rem;
+  }
+
+  /* ── Toast ── */
+  #toast {
+    position: fixed;
+    bottom: 28px;
+    left: 50%;
+    transform: translateX(-50%) translateY(80px);
+    background: #333;
+    color: #fff;
+    padding: 10px 22px;
+    border-radius: 24px;
+    font-size: 0.88rem;
+    transition: transform 0.25s ease;
+    z-index: 999;
+    pointer-events: none;
+  }
+  #toast.show { transform: translateX(-50%) translateY(0); }
+
+  /* ── Detail modal ── */
+  .modal-overlay {
+    display: none;
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.35);
+    z-index: 100;
+    align-items: center;
+    justify-content: center;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal {
+    background: #fff;
+    border-radius: 12px;
+    padding: 28px;
+    max-width: 600px;
+    width: 90%;
+    max-height: 80vh;
+    overflow-y: auto;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.18);
+  }
+  .modal h3 { font-size: 1rem; margin-bottom: 16px; color: var(--primary-dark); }
+  .modal-meta { font-size: 0.82rem; color: var(--text-muted); margin-bottom: 12px; }
+  .modal-label { font-size: 0.78rem; font-weight: 700; color: var(--text-muted); margin-top: 12px; margin-bottom: 4px; }
+  .modal-content { background: var(--bg); border-radius: 8px; padding: 12px; font-size: 0.9rem; line-height: 1.7; white-space: pre-wrap; }
+  .modal-close { float: right; background: none; border: none; font-size: 1.2rem; cursor: pointer; color: var(--text-muted); }
+
+  @media (max-width: 600px) {
+    .form-row { grid-template-columns: 1fr; }
+    header { padding: 14px 16px; }
+    .container { padding: 20px 14px; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div>
+    <h1>더여백26 CS 챗봇</h1>
+    <span>고객응대 AI 어시스턴트</span>
+  </div>
+</header>
+
+<div class="container">
+  <!-- Tabs -->
+  <nav class="tabs">
+    <button class="tab-btn active" onclick="switchTab('chat')">✏️ 답변 생성</button>
+    <button class="tab-btn" onclick="switchTab('history')">📋 히스토리</button>
+  </nav>
+
+  <!-- ── Tab 1: 답변 생성 ── -->
+  <div id="tab-chat" class="tab-panel active">
+    <div class="card">
+      <div class="form-row">
+        <div class="form-group">
+          <label>담당자명</label>
+          <input id="staff-name" type="text" placeholder="예: 김민지" autocomplete="off">
+        </div>
+        <div class="form-group">
+          <label>고객 ID</label>
+          <input id="customer-id" type="text" placeholder="예: CU001" autocomplete="off">
+        </div>
+      </div>
+      <div class="form-group" style="margin-bottom:20px">
+        <label>고객 질문</label>
+        <textarea id="question" placeholder="고객이 문의한 내용을 입력하세요."></textarea>
+      </div>
+      <button class="btn btn-primary" id="generate-btn" onclick="generateAnswer()">
+        <span class="spinner" id="spinner"></span>
+        <span id="btn-label">답변 생성</span>
+      </button>
+    </div>
+
+    <div id="answer-section" class="card" style="margin-top:20px">
+      <div class="section-label">생성된 답변</div>
+      <div id="answer-box"></div>
+      <div class="answer-actions">
+        <button class="btn btn-outline btn-sm" onclick="copyAnswer()">복사</button>
+        <button class="btn btn-outline btn-sm" onclick="resetForm()">초기화</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Tab 2: 히스토리 ── -->
+  <div id="tab-history" class="tab-panel">
+    <div class="card">
+      <div class="filter-row">
+        <input id="f-staff" type="text" placeholder="담당자명">
+        <input id="f-customer" type="text" placeholder="고객 ID">
+        <input id="f-from" type="date" title="시작일">
+        <input id="f-to" type="date" title="종료일">
+        <button class="btn btn-primary btn-sm" onclick="loadHistory()">검색</button>
+        <button class="btn btn-outline btn-sm" onclick="exportCSV()">CSV 내보내기</button>
+      </div>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>일시</th>
+              <th>담당자</th>
+              <th>고객 ID</th>
+              <th>질문</th>
+              <th>답변</th>
+            </tr>
+          </thead>
+          <tbody id="history-body">
+            <tr class="empty-row"><td colspan="5">검색 버튼을 눌러 조회하세요.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Detail Modal -->
+<div class="modal-overlay" id="modal-overlay" onclick="closeModal(event)">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModalBtn()">✕</button>
+    <h3>상세 보기</h3>
+    <div class="modal-meta" id="modal-meta"></div>
+    <div class="modal-label">질문</div>
+    <div class="modal-content" id="modal-question"></div>
+    <div class="modal-label">답변</div>
+    <div class="modal-content" id="modal-answer"></div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div id="toast"></div>
+
+<script>
+// ── Config (필요 시 이 값만 수정) ──────────────────────────────────────────
+const CONFIG = {
+  apiBase: 'http://localhost:8000',
+};
+
+// ── Tab switching ───────────────────────────────────────────────────────────
+function switchTab(name) {
+  document.querySelectorAll('.tab-btn').forEach((b, i) => {
+    b.classList.toggle('active', ['chat','history'][i] === name);
+  });
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.getElementById('tab-' + name).classList.add('active');
+  if (name === 'history') loadHistory();
+}
+
+// ── Answer generation ───────────────────────────────────────────────────────
+async function generateAnswer() {
+  const staffName  = document.getElementById('staff-name').value.trim();
+  const customerId = document.getElementById('customer-id').value.trim();
+  const question   = document.getElementById('question').value.trim();
+
+  if (!staffName)  return showToast('담당자명을 입력해주세요.');
+  if (!customerId) return showToast('고객 ID를 입력해주세요.');
+  if (!question)   return showToast('고객 질문을 입력해주세요.');
+
+  setLoading(true);
+
+  try {
+    const res = await fetch(`${CONFIG.apiBase}/api/chat`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ customer_id: customerId, question, staff_name: staffName }),
+    });
+    if (!res.ok) throw new Error(await res.text());
+    const data = await res.json();
+    document.getElementById('answer-box').textContent = data.answer;
+    document.getElementById('answer-section').style.display = 'block';
+    document.getElementById('answer-section').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  } catch (e) {
+    showToast('오류가 발생했습니다: ' + e.message);
+  } finally {
+    setLoading(false);
+  }
+}
+
+function setLoading(on) {
+  document.getElementById('generate-btn').disabled = on;
+  document.getElementById('spinner').style.display = on ? 'block' : 'none';
+  document.getElementById('btn-label').textContent = on ? '생성 중...' : '답변 생성';
+}
+
+function copyAnswer() {
+  const text = document.getElementById('answer-box').textContent;
+  navigator.clipboard.writeText(text).then(() => showToast('답변이 복사되었습니다.'));
+}
+
+function resetForm() {
+  document.getElementById('question').value = '';
+  document.getElementById('answer-box').textContent = '';
+  document.getElementById('answer-section').style.display = 'none';
+  document.getElementById('question').focus();
+}
+
+// ── History ─────────────────────────────────────────────────────────────────
+async function loadHistory() {
+  const params = new URLSearchParams({
+    staff_name:  document.getElementById('f-staff').value.trim(),
+    customer_id: document.getElementById('f-customer').value.trim(),
+    from_date:   document.getElementById('f-from').value,
+    to_date:     document.getElementById('f-to').value,
+  });
+
+  const tbody = document.getElementById('history-body');
+  tbody.innerHTML = '<tr class="empty-row"><td colspan="5">불러오는 중...</td></tr>';
+
+  try {
+    const res = await fetch(`${CONFIG.apiBase}/api/chat/history/all?${params}`);
+    if (!res.ok) throw new Error(await res.text());
+    const items = await res.json();
+
+    if (!items.length) {
+      tbody.innerHTML = '<tr class="empty-row"><td colspan="5">조회된 내역이 없습니다.</td></tr>';
+      return;
+    }
+
+    tbody.innerHTML = items.map(item => `
+      <tr onclick="openModal(${JSON.stringify(item).replace(/"/g, '&quot;')})">
+        <td style="white-space:nowrap">${formatDate(item.created_at)}</td>
+        <td>${esc(item.staff_name)}</td>
+        <td>${esc(item.customer_id)}</td>
+        <td class="text-col">${esc(item.question)}</td>
+        <td class="text-col">${esc(item.answer)}</td>
+      </tr>
+    `).join('');
+  } catch (e) {
+    tbody.innerHTML = `<tr class="empty-row"><td colspan="5">오류: ${e.message}</td></tr>`;
+  }
+}
+
+function exportCSV() {
+  const params = new URLSearchParams({
+    staff_name:  document.getElementById('f-staff').value.trim(),
+    customer_id: document.getElementById('f-customer').value.trim(),
+    from_date:   document.getElementById('f-from').value,
+    to_date:     document.getElementById('f-to').value,
+  });
+  window.location.href = `${CONFIG.apiBase}/api/chat/history/export?${params}`;
+}
+
+// ── Modal ───────────────────────────────────────────────────────────────────
+function openModal(item) {
+  document.getElementById('modal-meta').textContent =
+    `${formatDate(item.created_at)}  |  담당자: ${item.staff_name}  |  고객 ID: ${item.customer_id}`;
+  document.getElementById('modal-question').textContent = item.question;
+  document.getElementById('modal-answer').textContent = item.answer;
+  document.getElementById('modal-overlay').classList.add('open');
+}
+
+function closeModal(e) {
+  if (e.target === document.getElementById('modal-overlay')) closeModalBtn();
+}
+function closeModalBtn() {
+  document.getElementById('modal-overlay').classList.remove('open');
+}
+
+// ── Helpers ─────────────────────────────────────────────────────────────────
+function formatDate(iso) {
+  const d = new Date(iso);
+  const pad = n => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
+function esc(str) {
+  return String(str ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+// Enter key in question textarea (Shift+Enter = newline, Enter alone = generate)
+document.getElementById('question').addEventListener('keydown', e => {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); generateAnswer(); }
+});
+</script>
+</body>
+</html>

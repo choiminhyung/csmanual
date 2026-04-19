@@ -5,21 +5,32 @@ from pydantic import BaseModel
 # ── Chat ──────────────────────────────────────────────────────────────────────
 
 class ChatRequest(BaseModel):
-    session_id: str
-    message: str
+    customer_id: str
+    question: str
+    staff_name: str = ""
 
 
 class ChatResponse(BaseModel):
-    session_id: str
-    response: str
+    customer_id: str
+    answer: str
 
 
 class ChatHistoryItem(BaseModel):
     role: str
     content: str
+    staff_name: str = ""
     created_at: datetime
 
     model_config = {"from_attributes": True}
+
+
+class HistoryExchangeItem(BaseModel):
+    id: int
+    staff_name: str
+    customer_id: str
+    question: str
+    answer: str
+    created_at: datetime
 
 
 # ── Manual ────────────────────────────────────────────────────────────────────

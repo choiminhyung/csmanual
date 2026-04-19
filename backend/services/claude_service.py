@@ -22,19 +22,19 @@ def _get_history(db: Session, session_id: str) -> list[dict]:
     return [{"role": r.role, "content": r.content} for r in rows]
 
 
-def _save_message(db: Session, session_id: str, role: str, content: str) -> None:
-    db.add(ChatMessage(session_id=session_id, role=role, content=content))
+def _save_message(db: Session, session_id: str, role: str, content: str, staff_name: str = "") -> None:
+    db.add(ChatMessage(session_id=session_id, role=role, content=content, staff_name=staff_name))
     db.commit()
 
 
-def chat(db: Session, session_id: str, user_message: str) -> str:
+def chat(db: Session, customer_id: str, question: str, staff_name: str = "") -> str:
     manual_content = get_manual_provider().get_content()
-    history = _get_history(db, session_id)
+    history = _get_history(db, customer_id)
 
-    _save_message(db, session_id, "user", user_message)
+    _save_message(db, customer_id, "user", question, staff_name)
 
     ai = get_ai_provider()
-    assistant_text = ai.reply(manual_content, history, user_message)
+    answer = ai.reply(manual_content, history, question)
 
-    _save_message(db, session_id, "assistant", assistant_text)
-    return assistant_text
+    _save_message(db, customer_id, "assistant", answer, staff_name)
+    return answer

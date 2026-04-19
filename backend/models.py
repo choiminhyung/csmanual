@@ -11,4 +11,5 @@ class ChatMessage(Base):
     session_id: Mapped[str] = mapped_column(String(64), index=True)
     role: Mapped[str] = mapped_column(String(16))   # "user" | "assistant"
     content: Mapped[str] = mapped_column(Text)
+    staff_name: Mapped[str] = mapped_column(String(64), default="")
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)

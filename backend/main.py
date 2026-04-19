@@ -1,18 +1,22 @@
-import os
 from contextlib import asynccontextmanager
+from pathlib import Path
 
 from dotenv import load_dotenv
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
 
-load_dotenv()
+load_dotenv(Path(__file__).parent / ".env")
 
 from .database import create_tables  # noqa: E402
 from .routers import chat, manual    # noqa: E402
 
+FRONTEND_DIR = Path(__file__).parent.parent / "frontend"
+
 
 @asynccontextmanager
-async def lifespan(app: FastAPI):
+async def lifespan(_app: FastAPI):
     create_tables()
     yield
 
@@ -38,3 +42,12 @@ app.include_router(manual.router, prefix="/api")
 @app.get("/health")
 def health():
     return {"status": "ok"}
+
+
+@app.get("/")
+def serve_index():
+    return FileResponse(FRONTEND_DIR / "index.html")
+
+
+if FRONTEND_DIR.exists():
+    app.mount("/", StaticFiles(directory=str(FRONTEND_DIR), html=True), name="static")
