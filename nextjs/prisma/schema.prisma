@@ -1,0 +1,18 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+model ChatMessage {
+  id         Int      @id @default(autoincrement())
+  session_id String
+  role       String
+  content    String
+  staff_name String   @default("")
+  created_at DateTime @default(now())
+
+  @@index([session_id])
+}
