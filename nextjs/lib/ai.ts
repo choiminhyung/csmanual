@@ -1,4 +1,4 @@
-import { getManualContent } from './manual'
+import { getGuide } from './manual'
 
 const SYSTEM_PREAMBLE = `당신은 스킨케어 브랜드 **더여백26**의 전문 고객응대 AI입니다.
 아래 매뉴얼을 참고하여 고객 문의에 한국어로만 답변하세요.
@@ -20,7 +20,7 @@ export async function generateAnswer(
   history: Message[]
 ): Promise<string> {
   const provider = process.env.AI_PROVIDER ?? 'openai'
-  const manual = getManualContent()
+  const manual = getGuide()
   const systemText = `${SYSTEM_PREAMBLE}\n\n--- 매뉴얼 시작 ---\n${manual}\n--- 매뉴얼 끝 ---`
   const messages: Message[] = [...history, { role: 'user', content: question }]
 
